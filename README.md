@@ -25,7 +25,7 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 In short: you're free to use, modify, and distribute this software. If you run a modified version of it as a network service that other people interact with, the AGPL requires you to make your modified source available to those users. See the full license text below for the exact terms.
 
 Enterprise Gamer Vault
-Copyright (C) 2026 <your name or org here>
+Copyright (C) 2026 Joseph La Follette
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
@@ -42,7 +42,3 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 The full AGPL-3.0 license text is available at: https://www.gnu.org/licenses/agpl-3.0.txt
 
-Before you publish
-Put your own name (or your studio's) in the copyright line above.
-Add the same short header comment to the top of enterprise_gamer_vault.html if you want the license attached to the file itself, not just this README.
-AGPL is a strong copyleft license — anyone who runs a modified copy as a hosted service has to release their changes. If that's not what you want (e.g., you'd rather let others use it more freely, or keep some right to relicense later), MIT or Apache-2.0 are lighter alternatives worth considering before you ship it.
