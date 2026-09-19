@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise Gamer Vault</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#0b0c10; --surface:#12151c; --surface2:#1b202b; --border:#2c3444;
+  --brass:#c5a059; --brass-bright:#e8c96a; --teal:#66fcf1; --teal-dim:#2f6f6c;
+  --text:#dfe6ee; --text-dim:#8b94a6; --danger:#e0596b; --good:#59d68a;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;}
+h1,h2,h3,.display{font-family:'Cinzel',serif;letter-spacing:.02em;}
+button{font-family:inherit;cursor:pointer;}
+input,textarea,select{font-family:inherit;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:8px;}
+button{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:9px 14px;font-size:.82rem;}
+button:hover{border-color:var(--brass);}
+button.primary{background:linear-gradient(135deg,#1f2833,#0b0c10);border-color:var(--brass);color:var(--brass-bright);}
+button.primary:hover{background:var(--brass);color:#0b0c10;}
+button.ghost{background:transparent;}
+button.danger{border-color:var(--danger);color:var(--danger);}
+button.danger:hover{background:var(--danger);color:#0b0c10;}
+button:disabled{opacity:.4;cursor:not-allowed;}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+/* ---------- Lock screen ---------- */
+#lockScreen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 25%,#1b202b,#0b0c10 70%);z-index:900;padding:20px;}
+.lock-card{width:420px;max-width:92vw;background:var(--surface);border:1px solid var(--border);
+  border-top:4px solid var(--brass);border-radius:10px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.55);}
+.lock-card h1{font-size:1.3rem;color:var(--brass-bright);margin:0 0 4px;}
+.lock-card p.sub{color:var(--text-dim);font-size:.78rem;margin:0 0 20px;line-height:1.5;}
+.lock-card label{display:block;font-size:.75rem;color:var(--text-dim);margin:14px 0 5px;text-transform:uppercase;letter-spacing:.06em;}
+.lock-card input{width:100%;}
+.lock-err{color:var(--danger);font-size:.75rem;min-height:1.2em;margin-top:10px;}
+.lock-note{font-size:.7rem;color:var(--text-dim);border-top:1px dashed var(--border);margin-top:18px;padding-top:12px;line-height:1.6;}
+
+/* ---------- Shell ---------- */
+#app{display:none;max-width:1300px;margin:0 auto;padding:16px 18px 60px;}
+header.top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:12px;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal);}
+.brand h1{font-size:1.15rem;margin:0;color:var(--brass-bright);}
+.wallet{display:flex;gap:16px;align-items:center;font-size:.85rem;}
+.wallet span.big{font-size:1rem;font-weight:600;color:var(--teal);}
+.headerbtns{display:flex;gap:8px;}
+
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.tab-btn{font-size:.78rem;padding:9px 14px;}
+.tab-btn.active{background:var(--brass);color:#0b0c10;border-color:var(--brass);font-weight:600;}
+
+#fractalOverlay{position:fixed;inset:0;z-index:400;pointer-events:none;opacity:0;
+  image-rendering:pixelated;width:100%;height:100%;}
+
+main#stage{position:relative;}
+.tab{display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;}
+.tab.active{display:block;}
+.tab h2{margin-top:0;font-size:1.1rem;border-bottom:1px solid var(--border);padding-bottom:10px;color:var(--brass-bright);}
+.grid2{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;}
+@media(max-width:840px){.grid2{grid-template-columns:1fr;}}
+.panel{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;}
+.hint{color:var(--text-dim);font-size:.75rem;line-height:1.6;}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:.72rem;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;}
+.field input,.field textarea,.field select{width:100%;}
+
+/* Hub */
+.hub-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+@media(max-width:900px){.hub-grid{grid-template-columns:1fr;}}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;}
+.stat-card .n{font-size:1.8rem;color:var(--teal);font-weight:700;}
+.stat-card .l{font-size:.72rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;}
+.progress-bar{height:10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:8px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--teal-dim),var(--teal));}
+#visualizer{width:100%;height:60px;background:var(--surface);border:1px solid var(--border);border-radius:6px;}
+.navcards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px;}
+@media(max-width:700px){.navcards{grid-template-columns:1fr 1fr;}}
+.navcard{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;}
+.navcard b{display:block;color:var(--brass-bright);margin-bottom:4px;}
+
+/* Cards */
+.card-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:14px;}
+.mini-card{background:linear-gradient(150deg,#1b202b,#0b0c10);border:3px solid var(--brass);border-radius:10px;
+  padding:10px;font-size:.68rem;position:relative;}
+.mini-card h3{font-family:'Cinzel',serif;font-size:.82rem;color:var(--teal);margin:0 0 2px;text-align:center;}
+.mini-card .sub{text-align:center;color:var(--brass);font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.mini-card .lore{color:var(--text-dim);line-height:1.4;min-height:44px;margin-bottom:6px;}
+.badges{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:6px;}
+.badge{background:rgba(102,252,241,.08);border:1px solid var(--teal-dim);color:var(--teal);text-align:center;
+  padding:2px 3px;border-radius:3px;font-size:.58rem;text-transform:uppercase;}
+.card-foot{display:flex;justify-content:space-between;border-top:1px solid var(--brass);padding-top:5px;font-size:.62rem;color:var(--brass-bright);}
+.mini-actions{display:flex;gap:4px;margin-top:6px;}
+.mini-actions button{flex:1;padding:4px;font-size:.62rem;}
+
+/* Maps */
+#mapCanvas{background:radial-gradient(ellipse at 50% 0%,#151a24,#0b0c10);border:1px solid var(--border);border-radius:8px;width:100%;cursor:crosshair;}
+.map-legend{display:flex;gap:14px;font-size:.7rem;color:var(--text-dim);margin-top:8px;}
+.legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+.node-list{max-height:420px;overflow-y:auto;}
+.node-row{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-bottom:1px solid var(--border);font-size:.72rem;}
+
+/* Dice */
+.dice-stage{display:flex;gap:30px;flex-wrap:wrap;align-items:flex-start;}
+.cube-scene{width:120px;height:120px;perspective:600px;margin:20px;}
+.cube{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 1.05s cubic-bezier(.2,.8,.25,1);}
+.cube .face{position:absolute;width:120px;height:120px;background:linear-gradient(150deg,#1f2833,#0b0c10);
+  border:2px solid var(--brass);border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:1.8rem;color:var(--teal);backface-visibility:hidden;}
+.f1{transform:translateZ(60px);}
+.f2{transform:rotateX(90deg) translateZ(60px);}
+.f3{transform:rotateY(90deg) translateZ(60px);}
+.f4{transform:rotateY(-90deg) translateZ(60px);}
+.f5{transform:rotateX(-90deg) translateZ(60px);}
+.f6{transform:rotateY(180deg) translateZ(60px);}
+.quick-dice{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.qd-result{font-size:1.6rem;color:var(--brass-bright);text-align:center;font-family:'Cinzel',serif;}
+
+/* Code vault */
+.codebox{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;}
+.codebox textarea{width:100%;min-height:160px;font-family:'IBM Plex Mono',monospace;font-size:.78rem;resize:vertical;}
+.codebox-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+.codebox-head input{width:auto;flex:1;min-width:120px;}
+.eyebtn{font-size:1rem;padding:6px 10px;}
+.history-list{font-size:.68rem;color:var(--text-dim);margin-top:6px;max-height:100px;overflow-y:auto;}
+.history-list div{padding:3px 0;border-bottom:1px dashed var(--border);display:flex;justify-content:space-between;}
+iframe.preview{width:100%;height:220px;border:1px solid var(--border);border-radius:6px;margin-top:8px;background:#fff;}
+
+/* Templates */
+.tpl-row{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;}
+.tpl-row pre{white-space:pre-wrap;font-size:.72rem;color:var(--text-dim);max-height:120px;overflow-y:auto;margin:6px 0;}
+
+/* Files/vault */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin:14px 0;}
+.summary-grid .sc{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;}
+.summary-grid .sc b{display:block;color:var(--teal);font-size:1.2rem;}
+.disclaimer{background:#251a10;border:1px solid var(--brass);border-radius:8px;padding:14px;font-size:.75rem;line-height:1.6;color:#e8d3a8;margin:14px 0;}
+.codegen-list{font-size:.75rem;}
+.codegen-list div{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);}
+footer.foot{text-align:center;color:var(--text-dim);font-size:.68rem;margin-top:20px;line-height:1.7;}
+</style>
+</head>
+<body>
+
+<!-- ============ LOCK / CREATE VAULT SCREEN ============ -->
+<div id="lockScreen">
+  <div class="lock-card" id="lockCard">
+    <h1 id="lockTitle">Open the Vault</h1>
+    <p class="sub" id="lockSub">Enter your passphrase to decrypt your saved game vault (cards, maps, coins, code boxes).</p>
+    <label>Passphrase</label>
+    <input type="password" id="passInput" placeholder="•••••••••••">
+    <div class="lock-err" id="lockErr"></div>
+    <button class="primary" id="lockBtn" style="width:100%;margin-top:10px;">Unlock Vault</button>
+    <button class="ghost" id="switchModeBtn" style="width:100%;margin-top:8px;">No vault yet — create one instead</button>
+    <div class="lock-note">
+      Your passphrase derives a real AES-256-GCM key (via PBKDF2) that never leaves your browser.
+      It encrypts a single file kept in this browser's local storage. There is no password recovery —
+      if you forget your passphrase, that vault file can't be decrypted. This protects your local game
+      data; it is not a bank account, and nothing stored here is real currency.
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app">
+  <header class="top">
+    <div class="brand"><span class="dot"></span><h1>Enterprise Gamer Vault</h1></div>
+    <div class="wallet">
+      <div>🪙 <span class="big" id="coinDisplay">0</span> coins</div>
+      <div>🔑 <span class="big" id="keyDisplay">0</span> keys</div>
+    </div>
+    <div class="headerbtns">
+      <button id="lockNowBtn">Lock Vault</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="hub">Hub</button>
+    <button class="tab-btn" data-tab="cards">Cards</button>
+    <button class="tab-btn" data-tab="maps">Quest Maps</button>
+    <button class="tab-btn" data-tab="dice">Dice</button>
+    <button class="tab-btn" data-tab="code">Code Vault</button>
+    <button class="tab-btn" data-tab="templates">Templates</button>
+    <button class="tab-btn" data-tab="files">Vault Files</button>
+  </nav>
+
+  <canvas id="fractalOverlay"></canvas>
+
+  <main id="stage">
+
+    <!-- HUB -->
+    <section class="tab active" id="tab-hub">
+      <h2>Main Screen</h2>
+      <div class="grid2">
+        <div class="panel">
+          <h3 style="margin-top:0;font-size:.9rem;color:var(--brass-bright);">Music Player</h3>
+          <input type="file" id="musicFile" accept="audio/*">
+          <audio id="audioEl" controls style="width:100%;margin-top:10px;"></audio>
+          <canvas id="visualizer" style="margin-top:10px;"></canvas>
+          <p class="hint">Loads a track from your own device — nothing is uploaded anywhere. Play it and the bars react live.</p>
+        </div>
+        <div class="panel">
+          <h3 style="margin-top:0;font-size:.9rem;color:var(--brass-bright);">Build Progress</h3>
+          <div class="progress-bar"><div class="progress-fill" id="buildFill" style="width:0%"></div></div>
+          <input type="range" id="buildSlider" min="0" max="100" value="10" style="width:100%;">
+          <p class="hint">Drag to mark how far along your project / campaign build is. Saved to the vault.</p>
+          <button class="primary" id="mintRewardBtn" style="width:100%;margin-top:10px;">Mint Reward (end of session)</button>
+          <p class="hint">Mints in-game coins (and sometimes a key) into your vault. This is your game's own currency — not real money.</p>
+        </div>
+      </div>
+      <div class="hub-grid" style="margin-top:18px;">
+        <div class="stat-card"><div class="n" id="statCards">0</div><div class="l">Cards Minted</div></div>
+        <div class="stat-card"><div class="n" id="statMaps">0</div><div class="l">Quest Maps</div></div>
+        <div class="stat-card"><div class="n" id="statCode">0</div><div class="l">Code Boxes</div></div>
+      </div>
+      <div class="navcards">
+        <div class="navcard"><b>Cards</b>Design & mint game cards</div>
+        <div class="navcard"><b>Quest Maps</b>Build maps, intervals, side quests</div>
+        <div class="navcard"><b>Dice</b>Design and roll 3D dice</div>
+        <div class="navcard"><b>Code Vault</b>Save & commit code snippets</div>
+      </div>
+    </section>
+
+    <!-- CARDS -->
+    <section class="tab" id="tab-cards">
+      <h2>Card Forge</h2>
+      <div class="grid2">
+        <div class="panel">
+          <div class="field"><label>Title</label><input id="cTitle" placeholder="e.g. Ether Dragon Core"></div>
+          <div class="field"><label>Subtitle</label><input id="cSub" placeholder="e.g. Automata & Quantum Array"></div>
+          <div class="field"><label>Lore / Rules text</label><textarea id="cLore" rows="3" placeholder="What this card does in your game..."></textarea></div>
+          <div class="field"><label>Traits (comma separated, up to 6)</label><input id="cTraits" placeholder="Peacock Automata, Ether Dragon, Gyroscope Array"></div>
+          <div class="row">
+            <div class="field" style="flex:1;"><label>Key #</label><input id="cKey" placeholder="409"></div>
+            <div class="field" style="flex:1;"><label>Cost</label><input id="cCost" placeholder="7 Wheels"></div>
+          </div>
+          <button class="primary" id="mintCardBtn" style="width:100%;">Mint Card (+1 coin)</button>
+        </div>
+        <div class="panel">
+          <h3 style="margin-top:0;font-size:.9rem;color:var(--brass-bright);">Gallery</h3>
+          <button id="downloadAllCards">Download all cards (.json)</button>
+          <div class="card-gallery" id="cardGallery"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAPS -->
+    <section class="tab" id="tab-maps">
+      <h2>Quest Map Builder</h2>
+      <div class="row" style="margin-bottom:10px;">
+        <select id="mapSelect"></select>
+        <button id="newMapBtn">+ New Map</button>
+        <button id="renameMapBtn">Rename</button>
+        <button class="danger" id="deleteMapBtn">Delete Map</button>
+        <button id="downloadMapBtn">Download Map (.json)</button>
+      </div>
+      <div class="grid2">
+        <div>
+          <canvas id="mapCanvas" width="820" height="480"></canvas>
+          <div class="map-legend">
+            <span><span class="legend-dot" style="background:var(--teal)"></span>Main quest node</span>
+            <span><span class="legend-dot" style="background:var(--brass)"></span>Side quest node</span>
+            <span><span class="legend-dot" style="background:var(--good)"></span>Completed</span>
+          </div>
+          <p class="hint">Click empty space to add a node. Click one node then another to link them (an interval of play).
+          Drag a node to move it. Double-click a node to mark it complete (+1 coin, once). Right-click a node to delete it.</p>
+        </div>
+        <div class="panel">
+          <h3 style="margin-top:0;font-size:.9rem;color:var(--brass-bright);">Nodes & Side Quests</h3>
+          <div class="node-list" id="nodeList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DICE -->
+    <section class="tab" id="tab-dice">
+      <h2>Dice Designer</h2>
+      <div class="dice-stage">
+        <div>
+          <div class="cube-scene"><div class="cube" id="cube">
+            <div class="face f1" id="face1">1</div>
+            <div class="face f2" id="face2">2</div>
+            <div class="face f3" id="face3">3</div>
+            <div class="face f4" id="face4">4</div>
+            <div class="face f5" id="face5">5</div>
+            <div class="face f6" id="face6">6</div>
+          </div></div>
+          <button class="primary" id="rollCubeBtn">Roll your die</button>
+          <p class="hint">Design your six faces below (text, numbers, or emoji), then roll — this is a real 3D CSS cube, not a static picture.</p>
+          <div class="row" style="margin-top:10px;">
+            <input id="faceIn1" maxlength="4" style="width:50px;" value="1">
+            <input id="faceIn2" maxlength="4" style="width:50px;" value="2">
+            <input id="faceIn3" maxlength="4" style="width:50px;" value="3">
+            <input id="faceIn4" maxlength="4" style="width:50px;" value="4">
+            <input id="faceIn5" maxlength="4" style="width:50px;" value="5">
+            <input id="faceIn6" maxlength="4" style="width:50px;" value="6">
+            <button id="saveFacesBtn">Save Faces</button>
+          </div>
+        </div>
+        <div class="panel" style="flex:1;min-width:260px;">
+          <h3 style="margin-top:0;font-size:.9rem;color:var(--brass-bright);">Quick Rollers</h3>
+          <p class="hint">These are randomized number rollers styled with a spin animation — only the six-sided die above is a true 3D shape.</p>
+          <div class="quick-dice">
+            <button data-sides="4">d4</button>
+            <button data-sides="8">d8</button>
+            <button data-sides="10">d10</button>
+            <button data-sides="12">d12</button>
+            <button data-sides="20">d20</button>
+            <button data-sides="100">d100</button>
+          </div>
+          <div class="qd-result" id="qdResult">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CODE VAULT -->
+    <section class="tab" id="tab-code">
+      <h2>Code Vault — build your own app / game logic</h2>
+      <p class="hint">Each box is a separate snippet. The eye icon locks a box (read-only, settings safe) or unlocks it for editing.
+      Commit saves a version you can restore later. HTML/JS boxes can be previewed in an isolated sandbox.</p>
+      <button class="primary" id="addCodeBoxBtn" style="margin-bottom:12px;">+ Add Code Box</button>
+      <div id="codeBoxList"></div>
+    </section>
+
+    <!-- TEMPLATES -->
+    <section class="tab" id="tab-templates">
+      <h2>Templates</h2>
+      <p class="hint">Save reusable building blocks — NPC sheets, side-quest formats, card layouts, whatever your table needs.</p>
+      <div class="field"><label>Template name</label><input id="tplName" placeholder="e.g. Side Quest Template"></div>
+      <div class="field"><label>Template body</label><textarea id="tplBody" rows="4" placeholder="Free text or JSON..."></textarea></div>
+      <button class="primary" id="addTplBtn">Save Template</button>
+      <div id="tplList" style="margin-top:16px;"></div>
+    </section>
+
+    <!-- FILES / VAULT -->
+    <section class="tab" id="tab-files">
+      <h2>Vault Files</h2>
+      <div class="summary-grid">
+        <div class="sc"><b id="sumCards">0</b>Cards</div>
+        <div class="sc"><b id="sumMaps">0</b>Maps</div>
+        <div class="sc"><b id="sumCode">0</b>Code Boxes</div>
+        <div class="sc"><b id="sumTpl">0</b>Templates</div>
+        <div class="sc"><b id="sumCoins">0</b>Coins</div>
+        <div class="sc"><b id="sumKeys">0</b>Keys</div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin-top:0;font-size:.9rem;color:var(--brass-bright);">Backups</h3>
+        <div class="row">
+          <button id="exportEncryptedBtn">Export encrypted vault (.vault)</button>
+          <button id="importEncryptedBtn">Import vault file</button>
+          <input type="file" id="importFileInput" accept=".vault,.json" style="display:none;">
+          <button id="exportPlainBtn" class="ghost">Export unencrypted backup (.json)</button>
+          <button id="changePassBtn">Change Passphrase</button>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px;">
+        <h3 style="margin-top:0;font-size:.9rem;color:var(--brass-bright);">Credit Codes</h3>
+        <p class="hint">Generates a cosmetic code tied to your current coin/key balance and this vault's passphrase-derived key —
+        for use inside your own game (redeeming for in-world items, unlocking a table event, etc).</p>
+        <button id="genCodeBtn">Generate Credit Code</button>
+        <div class="codegen-list" id="codeList"></div>
+      </div>
+
+      <div class="disclaimer">
+        <b>What's real here, plainly stated:</b> the vault lock on this page uses real AES-256-GCM encryption with a
+        PBKDF2-derived key from your passphrase, protecting the copy of your game data that sits in this browser's
+        local storage. That's it. Coins, keys, and credit codes are <b>in-game currency for your own campaigns</b> —
+        they are not money, cannot be cashed out, aren't tied to any market, and nothing in this file talks to a bank,
+        an exchange, or the internet. If you ever want real payments or redemption, that needs actual financial and
+        legal infrastructure well beyond a single HTML page — happy to talk through what that would involve.
+      </div>
+
+      <div class="row">
+        <button class="danger" id="wipeVaultBtn">Erase this vault permanently</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="foot">Enterprise Gamer Vault — a self-contained HTML toolkit. Everything lives in this file and your browser's local storage.</footer>
+</div>
+
+<script>
+/* ======================================================================
+   CRYPTO — real AES-256-GCM with PBKDF2 key derivation (Web Crypto API)
+   ====================================================================== */
+const enc = new TextEncoder(), dec = new TextDecoder();
+function ab2b64(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function b642ab(b64){ const bin=atob(b64); const arr=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i); return arr.buffer; }
+
+async function deriveKey(passphrase, saltB64){
+  const salt = b642ab(saltB64);
+  const baseKey = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt, iterations:250000, hash:'SHA-256' },
+    baseKey, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']
+  );
+}
+async function encryptJSON(key, obj){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = enc.encode(JSON.stringify(obj));
+  const cipher = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, data);
+  return { iv: ab2b64(iv), data: ab2b64(cipher) };
+}
+async function decryptJSON(key, ivB64, dataB64){
+  const iv = new Uint8Array(b642ab(ivB64));
+  const plain = await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, b642ab(dataB64));
+  return JSON.parse(dec.decode(plain));
+}
+
+const VAULT_KEY = 'egv_vault_blob_v1';
+let sessionKey = null;   // AES key, memory-only
+let state = null;        // decrypted app state
+
+function defaultState(){
+  return {
+    coins:0, keys:0, buildPercent:10, mintCount:0,
+    musicName:null,
+    cards:[
+      {id:cryptoId(),title:'Ether Dragon Core',subtitle:'Automata & Quantum Array',
+       lore:'Forged from spare wheels and stormlight, it hums when a quest is near completion.',
+       traits:['Peacock Automata','Ether Dragon','Gyroscope Array','Brass Lattice'],keyNum:'409',cost:'7 Wheels'},
+      {id:cryptoId(),title:'Clockwork Wayfinder',subtitle:'Navigator Relic',
+       lore:'Points toward the nearest unresolved side quest, whether you asked it to or not.',
+       traits:['Clockwork Dragon','Obsidian Dragon'],keyNum:'112',cost:'3 Wheels'}
+    ],
+    maps:[ {id:cryptoId(), name:'First Campaign Map', nodes:[], edges:[]} ],
+    dice:{ faces:['1','2','3','4','5','6'] },
+    codeboxes:[],
+    templates:[
+      {id:cryptoId(), name:'Side Quest Template', body:'Name:\nGiver:\nHook:\nReward (coins/keys/card):\nInterval (when it unlocks):'}
+    ],
+    creditCodes:[]
+  };
+}
+function cryptoId(){ return crypto.getRandomValues(new Uint32Array(2)).join('-'); }
+
+async function saveVault(){
+  if(!sessionKey) return;
+  const salt = JSON.parse(localStorage.getItem(VAULT_KEY)||'{}').salt;
+  const {iv,data} = await encryptJSON(sessionKey, state);
+  localStorage.setItem(VAULT_KEY, JSON.stringify({salt, iv, data}));
+}
+
+/* ======================================================================
+   LOCK SCREEN LOGIC
+   ====================================================================== */
+const lockScreen=document.getElementById('lockScreen');
+const lockTitle=document.getElementById('lockTitle');
+const lockSub=document.getElementById('lockSub');
+const lockBtn=document.getElementById('lockBtn');
+const switchModeBtn=document.getElementById('switchModeBtn');
+const passInput=document.getElementById('passInput');
+const lockErr=document.getElementById('lockErr');
+let createMode = !localStorage.getItem(VAULT_KEY);
+
+function refreshLockUI(){
+  if(createMode){
+    lockTitle.textContent='Create Your Vault';
+    lockSub.textContent='Choose a passphrase. It encrypts everything you build here — there is no reset if you lose it.';
+    lockBtn.textContent='Create & Unlock';
+    switchModeBtn.textContent='I already have a vault — unlock instead';
+  } else {
+    lockTitle.textContent='Open the Vault';
+    lockSub.textContent='Enter your passphrase to decrypt your saved game vault.';
+    lockBtn.textContent='Unlock Vault';
+    switchModeBtn.textContent='No vault yet — create one instead';
+  }
+}
+refreshLockUI();
+switchModeBtn.onclick=()=>{ createMode=!createMode; lockErr.textContent=''; refreshLockUI(); };
+
+lockBtn.onclick=async()=>{
+  const pass=passInput.value;
+  if(!pass || pass.length<4){ lockErr.textContent='Passphrase must be at least 4 characters.'; return; }
+  lockErr.textContent='Working...';
+  try{
+    if(createMode){
+      const salt = ab2b64(crypto.getRandomValues(new Uint8Array(16)).buffer);
+      sessionKey = await deriveKey(pass, salt);
+      state = defaultState();
+      const {iv,data} = await encryptJSON(sessionKey, state);
+      localStorage.setItem(VAULT_KEY, JSON.stringify({salt, iv, data}));
+    } else {
+      const blob = JSON.parse(localStorage.getItem(VAULT_KEY));
+      sessionKey = await deriveKey(pass, blob.salt);
+      state = await decryptJSON(sessionKey, blob.iv, blob.data);
+    }
+    lockErr.textContent='';
+    enterApp();
+  }catch(e){
+    lockErr.textContent='Wrong passphrase, or the vault file is corrupted.';
+  }
+};
+
+function enterApp(){
+  lockScreen.style.display='none';
+  document.getElementById('app').style.display='block';
+  renderAll();
+}
+
+document.getElementById('lockNowBtn').onclick=()=>{
+  sessionKey=null; state=null;
+  document.getElementById('app').style.display='none';
+  lockScreen.style.display='flex';
+  passInput.value=''; createMode=false; refreshLockUI();
+};
+
+/* ======================================================================
+   FRACTAL (Mandelbrot) TAB TRANSITION
+   ====================================================================== */
+const overlay=document.getElementById('fractalOverlay');
+const octx=overlay.getContext('2d');
+function sizeOverlay(){ overlay.width=180; overlay.height=110; overlay.style.width='100%'; overlay.style.height='100%'; }
+sizeOverlay();
+
+function renderMandelbrot(cx,cy,scale){
+  const w=overlay.width,h=overlay.height, img=octx.createImageData(w,h), maxIter=36;
+  for(let py=0;py<h;py++){
+    for(let px=0;px<w;px++){
+      const x0 = cx + (px - w/2)/ (w/2) * scale;
+      const y0 = cy + (py - h/2)/ (h/2) * scale;
+      let x=0,y=0,it=0;
+      while(x*x+y*y<=4 && it<maxIter){ const xt=x*x-y*y+x0; y=2*x*y+y0; x=xt; it++; }
+      const idx=(py*w+px)*4;
+      if(it===maxIter){ img.data[idx]=11; img.data[idx+1]=12; img.data[idx+2]=16; }
+      else{
+        const t=it/maxIter;
+        img.data[idx]  = 30 + t*180;          // toward brass
+        img.data[idx+1]= 40 + t*160;
+        img.data[idx+2]= 60 + (1-t)*180;      // toward teal
+      }
+      img.data[idx+3]=255;
+    }
+  }
+  octx.putImageData(img,0,0);
+}
+
+function fractalTransition(midCallback){
+  const duration=650, start=performance.now();
+  overlay.style.pointerEvents='auto';
+  function step(now){
+    const p=Math.min(1,(now-start)/duration);
+    const scale = 2.6 - p*2.3;           // zoom in
+    renderMandelbrot(-0.6+p*0.3, 0.0, Math.max(0.02,scale));
+    overlay.style.opacity = Math.sin(p*Math.PI); // fade in then out
+    if(p>=0.48 && p<0.55 && !step._fired){ step._fired=true; midCallback(); }
+    if(p<1) requestAnimationFrame(step);
+    else { overlay.style.opacity=0; overlay.style.pointerEvents='none'; step._fired=false; }
+  }
+  requestAnimationFrame(step);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const target=btn.dataset.tab;
+    fractalTransition(()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.getElementById('tab-'+target).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b===btn));
+      if(target==='maps') drawMap();
+    });
+  });
+});
+
+/* ======================================================================
+   RENDER ALL
+   ====================================================================== */
+function renderAll(){
+  document.getElementById('coinDisplay').textContent=state.coins;
+  document.getElementById('keyDisplay').textContent=state.keys;
+  document.getElementById('buildSlider').value=state.buildPercent;
+  document.getElementById('buildFill').style.width=state.buildPercent+'%';
+  document.getElementById('statCards').textContent=state.cards.length;
+  document.getElementById('statMaps').textContent=state.maps.length;
+  document.getElementById('statCode').textContent=state.codeboxes.length;
+  renderCards(); renderMapSelect(); drawMap(); renderCodeBoxes(); renderTemplates(); renderFiles(); loadFaceInputs();
+}
+
+/* ---------- HUB ---------- */
+document.getElementById('buildSlider').oninput=(e)=>{
+  state.buildPercent=parseInt(e.target.value);
+  document.getElementById('buildFill').style.width=state.buildPercent+'%';
+};
+document.getElementById('buildSlider').onchange=()=>saveVault();
+
+document.getElementById('mintRewardBtn').onclick=async()=>{
+  state.mintCount++;
+  const gain=1+Math.floor(Math.random()*3);
+  state.coins+=gain;
+  let msg=`Minted ${gain} coins.`;
+  if(state.mintCount%5===0){ state.keys++; msg+=' A key surfaced too.'; }
+  document.getElementById('coinDisplay').textContent=state.coins;
+  document.getElementById('keyDisplay').textContent=state.keys;
+  await saveVault();
+  alert(msg+' (In-game currency — saved to your encrypted vault.)');
+};
+
+// music
+const audioEl=document.getElementById('audioEl');
+document.getElementById('musicFile').onchange=(e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  audioEl.src=URL.createObjectURL(f);
+  state.musicName=f.name; saveVault();
+  setupVisualizer();
+};
+let audioCtx,analyser,srcNode;
+function setupVisualizer(){
+  if(audioCtx) return;
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  srcNode=audioCtx.createMediaElementSource(audioEl);
+  analyser=audioCtx.createAnalyser(); analyser.fftSize=64;
+  srcNode.connect(analyser); analyser.connect(audioCtx.destination);
+  const canvas=document.getElementById('visualizer'); const vctx=canvas.getContext('2d');
+  function resize(){ canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight; }
+  resize(); window.addEventListener('resize',resize);
+  const data=new Uint8Array(analyser.frequencyBinCount);
+  function draw(){
+    requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(data);
+    vctx.clearRect(0,0,canvas.width,canvas.height);
+    const bw=canvas.width/data.length;
+    for(let i=0;i<data.length;i++){
+      const h=(data[i]/255)*canvas.height;
+      vctx.fillStyle=i%2===0?'#66fcf1':'#c5a059';
+      vctx.fillRect(i*bw,canvas.height-h,bw-2,h);
+    }
+  }
+  draw();
+}
+audioEl.addEventListener('play',()=>{ if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); });
+
+/* ---------- CARDS ---------- */
+function renderCards(){
+  const gal=document.getElementById('cardGallery'); gal.innerHTML='';
+  state.cards.forEach(c=>{
+    const el=document.createElement('div'); el.className='mini-card';
+    el.innerHTML=`<h3>${escapeHTML(c.title)}</h3><div class="sub">${escapeHTML(c.subtitle||'')}</div>
+      <div class="lore">${escapeHTML(c.lore||'')}</div>
+      <div class="badges">${c.traits.map(t=>`<div class="badge">${escapeHTML(t)}</div>`).join('')}</div>
+      <div class="card-foot"><span>🔑 ${escapeHTML(c.keyNum||'')}</span><span>${escapeHTML(c.cost||'')}</span></div>
+      <div class="mini-actions">
+        <button data-act="dl" data-id="${c.id}">Download</button>
+        <button data-act="del" data-id="${c.id}" class="danger">Delete</button>
+      </div>`;
+    gal.appendChild(el);
+  });
+  gal.querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{
+      const card=state.cards.find(c=>c.id===b.dataset.id);
+      if(b.dataset.act==='del'){ state.cards=state.cards.filter(c=>c.id!==b.dataset.id); saveVault(); renderCards(); renderFiles(); }
+      else downloadText(JSON.stringify(card,null,2), (card.title||'card')+'.json');
+    };
+  });
+}
+document.getElementById('mintCardBtn').onclick=async()=>{
+  const title=document.getElementById('cTitle').value.trim();
+  if(!title){ alert('Give the card a title first.'); return; }
+  const traits=document.getElementById('cTraits').value.split(',').map(s=>s.trim()).filter(Boolean).slice(0,6);
+  state.cards.push({
+    id:cryptoId(), title, subtitle:document.getElementById('cSub').value.trim(),
+    lore:document.getElementById('cLore').value.trim(), traits,
+    keyNum:document.getElementById('cKey').value.trim(), cost:document.getElementById('cCost').value.trim()
+  });
+  state.coins+=1;
+  ['cTitle','cSub','cLore','cTraits','cKey','cCost'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('coinDisplay').textContent=state.coins;
+  await saveVault(); renderCards(); renderFiles();
+};
+document.getElementById('downloadAllCards').onclick=()=>downloadText(JSON.stringify(state.cards,null,2),'all_cards.json');
+
+/* ---------- MAPS ---------- */
+const mapCanvas=document.getElementById('mapCanvas'); const mctx=mapCanvas.getContext('2d');
+let currentMapId=null, dragNode=null, selectNode=null;
+
+function renderMapSelect(){
+  const sel=document.getElementById('mapSelect'); sel.innerHTML='';
+  state.maps.forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.name; sel.appendChild(o); });
+  if(!currentMapId && state.maps[0]) currentMapId=state.maps[0].id;
+  sel.value=currentMapId;
+}
+document.getElementById('mapSelect').onchange=(e)=>{ currentMapId=e.target.value; drawMap(); };
+document.getElementById('newMapBtn').onclick=async()=>{
+  const name=prompt('Name this map:','New Quest Map'); if(!name) return;
+  const m={id:cryptoId(),name,nodes:[],edges:[]}; state.maps.push(m); currentMapId=m.id;
+  await saveVault(); renderMapSelect(); drawMap(); renderFiles();
+};
+document.getElementById('renameMapBtn').onclick=async()=>{
+  const m=getCurrentMap(); if(!m) return;
+  const name=prompt('Rename map:',m.name); if(!name) return;
+  m.name=name; await saveVault(); renderMapSelect();
+};
+document.getElementById('deleteMapBtn').onclick=async()=>{
+  if(!getCurrentMap()) return;
+  if(!confirm('Delete this whole map?')) return;
+  state.maps=state.maps.filter(m=>m.id!==currentMapId); currentMapId=state.maps[0]?state.maps[0].id:null;
+  await saveVault(); renderMapSelect(); drawMap(); renderFiles();
+};
+document.getElementById('downloadMapBtn').onclick=()=>{
+  const m=getCurrentMap(); if(!m) return;
+  downloadText(JSON.stringify(m,null,2), m.name.replace(/\s+/g,'_')+'.json');
+};
+function getCurrentMap(){ return state.maps.find(m=>m.id===currentMapId); }
+
+function drawMap(){
+  const m=getCurrentMap(); mctx.clearRect(0,0,mapCanvas.width,mapCanvas.height);
+  if(!m) return;
+  mctx.strokeStyle='#c5a059'; mctx.lineWidth=2;
+  m.edges.forEach(([a,b])=>{
+    const na=m.nodes.find(n=>n.id===a), nb=m.nodes.find(n=>n.id===b); if(!na||!nb) return;
+    mctx.beginPath(); mctx.moveTo(na.x,na.y); mctx.lineTo(nb.x,nb.y); mctx.stroke();
+  });
+  m.nodes.forEach(n=>{
+    mctx.beginPath(); mctx.arc(n.x,n.y,14,0,Math.PI*2);
+    mctx.fillStyle = n.completed?'#59d68a':(n.type==='side'?'#c5a059':'#66fcf1');
+    mctx.fill(); mctx.lineWidth=2; mctx.strokeStyle='#0b0c10'; mctx.stroke();
+    mctx.fillStyle='#dfe6ee'; mctx.font='11px IBM Plex Mono'; mctx.textAlign='center';
+    mctx.fillText(n.name, n.x, n.y+28);
+    if(n.interval) mctx.fillText('('+n.interval+')', n.x, n.y+40);
+    if(selectNode===n.id){ mctx.beginPath(); mctx.arc(n.x,n.y,18,0,Math.PI*2); mctx.strokeStyle='#e8c96a'; mctx.stroke(); }
+  });
+  renderNodeList(m);
+}
+function renderNodeList(m){
+  const list=document.getElementById('nodeList'); list.innerHTML='';
+  m.nodes.forEach(n=>{
+    const row=document.createElement('div'); row.className='node-row';
+    row.innerHTML=`<span>${n.completed?'✅':(n.type==='side'?'🟡':'🔵')} ${escapeHTML(n.name)} ${n.interval?'· '+escapeHTML(n.interval):''}</span>`;
+    list.appendChild(row);
+  });
+}
+function nodeAt(m,x,y){ return m.nodes.find(n=>Math.hypot(n.x-x,n.y-y)<16); }
+
+mapCanvas.addEventListener('mousedown',(e)=>{
+  const m=getCurrentMap(); if(!m) return;
+  const rect=mapCanvas.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*(mapCanvas.width/rect.width), y=(e.clientY-rect.top)*(mapCanvas.height/rect.height);
+  const n=nodeAt(m,x,y);
+  if(n){ dragNode={id:n.id,moved:false}; }
+});
+mapCanvas.addEventListener('mousemove',(e)=>{
+  if(!dragNode) return;
+  const m=getCurrentMap(); const rect=mapCanvas.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*(mapCanvas.width/rect.width), y=(e.clientY-rect.top)*(mapCanvas.height/rect.height);
+  const n=m.nodes.find(n=>n.id===dragNode.id); n.x=x; n.y=y; dragNode.moved=true; drawMap();
+});
+mapCanvas.addEventListener('mouseup',async(e)=>{
+  const m=getCurrentMap(); if(!m) return;
+  const rect=mapCanvas.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*(mapCanvas.width/rect.width), y=(e.clientY-rect.top)*(mapCanvas.height/rect.height);
+  if(dragNode){
+    if(!dragNode.moved){
+      // treat as a click on a node -> connect logic
+      if(selectNode===null) selectNode=dragNode.id;
+      else if(selectNode!==dragNode.id){
+        const exists=m.edges.some(([a,b])=>(a===selectNode&&b===dragNode.id)||(a===dragNode.id&&b===selectNode));
+        if(!exists) m.edges.push([selectNode,dragNode.id]);
+        selectNode=null;
+      } else selectNode=null;
+    }
+    dragNode=null; await saveVault(); drawMap();
+    return;
+  }
+  const existing=nodeAt(m,x,y);
+  if(!existing){
+    const name=prompt('Node name:'); if(!name) return;
+    const isSide=confirm('Is this a SIDE quest node?\nOK = Side Quest, Cancel = Main Quest');
+    const interval=prompt('Interval / day this unlocks (optional):','')||'';
+    m.nodes.push({id:cryptoId(),x,y,name,type:isSide?'side':'main',interval,completed:false});
+    await saveVault(); drawMap(); renderFiles();
+  }
+});
+mapCanvas.addEventListener('dblclick',async(e)=>{
+  const m=getCurrentMap(); if(!m) return;
+  const rect=mapCanvas.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*(mapCanvas.width/rect.width), y=(e.clientY-rect.top)*(mapCanvas.height/rect.height);
+  const n=nodeAt(m,x,y); if(!n) return;
+  if(!n.completed){ n.completed=true; state.coins+=1; document.getElementById('coinDisplay').textContent=state.coins; }
+  await saveVault(); drawMap();
+});
+mapCanvas.addEventListener('contextmenu',async(e)=>{
+  e.preventDefault(); const m=getCurrentMap(); if(!m) return;
+  const rect=mapCanvas.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*(mapCanvas.width/rect.width), y=(e.clientY-rect.top)*(mapCanvas.height/rect.height);
+  const n=nodeAt(m,x,y); if(!n) return;
+  if(confirm('Delete node "'+n.name+'"?')){
+    m.nodes=m.nodes.filter(x2=>x2.id!==n.id);
+    m.edges=m.edges.filter(([a,b])=>a!==n.id&&b!==n.id);
+    await saveVault(); drawMap();
+  }
+});
+
+/* ---------- DICE ---------- */
+const cubeRot={1:'rotateX(0deg) rotateY(0deg)',2:'rotateX(-90deg) rotateY(0deg)',3:'rotateY(-90deg)',
+  4:'rotateY(90deg)',5:'rotateX(90deg) rotateY(0deg)',6:'rotateY(180deg)'};
+function loadFaceInputs(){
+  state.dice.faces.forEach((v,i)=>{ document.getElementById('faceIn'+(i+1)).value=v; document.getElementById('face'+(i+1)).textContent=v; });
+}
+document.getElementById('saveFacesBtn').onclick=async()=>{
+  for(let i=1;i<=6;i++){
+    const v=document.getElementById('faceIn'+i).value||String(i);
+    state.dice.faces[i-1]=v; document.getElementById('face'+i).textContent=v;
+  }
+  await saveVault();
+};
+document.getElementById('rollCubeBtn').onclick=()=>{
+  const result=1+Math.floor(Math.random()*6);
+  const cube=document.getElementById('cube');
+  const spins=[720+360*Math.floor(Math.random()*2), 720+360*Math.floor(Math.random()*2)];
+  const base=cubeRot[result];
+  // append extra spins onto whichever axes appear in base rotation, else just add a spin
+  cube.style.transform = `rotateX(${spins[0]}deg) rotateY(${spins[1]}deg)`;
+  requestAnimationFrame(()=>{
+    setTimeout(()=>{ cube.style.transform = base; }, 30);
+  });
+  setTimeout(()=>alert('Rolled: '+state.dice.faces[result-1]), 1150);
+};
+document.querySelectorAll('.quick-dice button').forEach(b=>{
+  b.onclick=()=>{
+    const sides=parseInt(b.dataset.sides);
+    const res=document.getElementById('qdResult');
+    res.style.transform='rotate(0deg)'; res.style.transition='none';
+    let n=0; const iv=setInterval(()=>{ res.textContent=1+Math.floor(Math.random()*sides); n++; if(n>8){ clearInterval(iv); res.textContent='d'+sides+': '+(1+Math.floor(Math.random()*sides)); } },50);
+  };
+});
+
+/* ---------- CODE VAULT ---------- */
+function extFor(lang){
+  const l=(lang||'').toLowerCase();
+  if(l.includes('py')) return 'py'; if(l.includes('js')) return 'js'; if(l.includes('html')) return 'html';
+  if(l.includes('css')) return 'css'; if(l.includes('json')) return 'json'; return 'txt';
+}
+function renderCodeBoxes(){
+  const wrap=document.getElementById('codeBoxList'); wrap.innerHTML='';
+  state.codeboxes.forEach(box=>{
+    const el=document.createElement('div'); el.className='codebox';
+    el.innerHTML=`
+      <div class="codebox-head">
+        <input data-f="name" value="${escapeAttr(box.name)}" ${box.locked?'disabled':''}>
+        <input data-f="lang" value="${escapeAttr(box.lang)}" style="max-width:100px;" placeholder="lang" ${box.locked?'disabled':''}>
+        <button class="eyebtn" data-act="lock">${box.locked?'🔒':'👁️'}</button>
+        <button data-act="commit">Commit</button>
+        <button data-act="download">Download</button>
+        ${(box.lang||'').toLowerCase().match(/html|js/) ? '<button data-act="run">Run Preview</button>' : ''}
+        <button data-act="del" class="danger">Delete</button>
+      </div>
+      <textarea data-f="content" ${box.locked?'readonly':''}>${escapeHTML(box.content)}</textarea>
+      <div class="history-list">${box.history.map((h,i)=>`<div><span>${new Date(h.ts).toLocaleString()} — ${escapeHTML(h.msg||'commit')}</span><button data-act="restore" data-i="${i}">Restore</button></div>`).join('')}</div>
+      <div class="preview-slot"></div>
+    `;
+    wrap.appendChild(el);
+    el.querySelector('[data-f=name]').onchange=async(e)=>{ box.name=e.target.value; await saveVault(); };
+    el.querySelector('[data-f=lang]').onchange=async(e)=>{ box.lang=e.target.value; renderCodeBoxes(); await saveVault(); };
+    const ta=el.querySelector('[data-f=content]');
+    ta.oninput=()=>{ if(!box.locked) box.content=ta.value; };
+    ta.onblur=async()=>{ await saveVault(); };
+    el.querySelector('[data-act=lock]').onclick=async()=>{ box.locked=!box.locked; await saveVault(); renderCodeBoxes(); };
+    el.querySelector('[data-act=commit]').onclick=async()=>{
+      const msg=prompt('Commit message:','update')||'update';
+      box.history.push({ts:Date.now(),msg,content:box.content});
+      await saveVault(); renderCodeBoxes();
+    };
+    el.querySelector('[data-act=download]').onclick=()=>downloadText(box.content, (box.name||'snippet')+'.'+extFor(box.lang));
+    el.querySelector('[data-act=del]').onclick=async()=>{
+      if(!confirm('Delete this code box?')) return;
+      state.codeboxes=state.codeboxes.filter(b=>b.id!==box.id); await saveVault(); renderCodeBoxes(); renderFiles();
+    };
+    const runBtn=el.querySelector('[data-act=run]');
+    if(runBtn) runBtn.onclick=()=>{
+      const slot=el.querySelector('.preview-slot'); slot.innerHTML='';
+      const frame=document.createElement('iframe'); frame.className='preview'; frame.sandbox='allow-scripts allow-modals';
+      const isHtml=(box.lang||'').toLowerCase().includes('html');
+      frame.srcdoc = isHtml ? box.content : `<script>${box.content}<\/script>`;
+      slot.appendChild(frame);
+    };
+    el.querySelectorAll('[data-act=restore]').forEach(btn=>{
+      btn.onclick=async()=>{
+        box.content=box.history[parseInt(btn.dataset.i)].content;
+        await saveVault(); renderCodeBoxes();
+      };
+    });
+  });
+}
+document.getElementById('addCodeBoxBtn').onclick=async()=>{
+  state.codeboxes.push({id:cryptoId(),name:'new_snippet',lang:'js',content:'// start building...',locked:false,history:[]});
+  await saveVault(); renderCodeBoxes(); renderFiles();
+};
+
+/* ---------- TEMPLATES ---------- */
+function renderTemplates(){
+  const wrap=document.getElementById('tplList'); wrap.innerHTML='';
+  state.templates.forEach(t=>{
+    const el=document.createElement('div'); el.className='tpl-row';
+    el.innerHTML=`<b>${escapeHTML(t.name)}</b><pre>${escapeHTML(t.body)}</pre>
+      <div class="row"><button data-act="use">Insert as new code box</button>
+      <button data-act="dl">Download</button><button data-act="del" class="danger">Delete</button></div>`;
+    wrap.appendChild(el);
+    el.querySelector('[data-act=use]').onclick=async()=>{
+      state.codeboxes.push({id:cryptoId(),name:t.name,lang:'txt',content:t.body,locked:false,history:[]});
+      await saveVault(); renderCodeBoxes(); renderFiles(); alert('Added to Code Vault.');
+    };
+    el.querySelector('[data-act=dl]').onclick=()=>downloadText(t.body, t.name.replace(/\s+/g,'_')+'.txt');
+    el.querySelector('[data-act=del]').onclick=async()=>{
+      state.templates=state.templates.filter(x=>x.id!==t.id); await saveVault(); renderTemplates(); renderFiles();
+    };
+  });
+}
+document.getElementById('addTplBtn').onclick=async()=>{
+  const name=document.getElementById('tplName').value.trim(); const body=document.getElementById('tplBody').value;
+  if(!name){ alert('Name the template first.'); return; }
+  state.templates.push({id:cryptoId(),name,body});
+  document.getElementById('tplName').value=''; document.getElementById('tplBody').value='';
+  await saveVault(); renderTemplates();
+};
+
+/* ---------- FILES / VAULT ---------- */
+function renderFiles(){
+  document.getElementById('sumCards').textContent=state.cards.length;
+  document.getElementById('sumMaps').textContent=state.maps.length;
+  document.getElementById('sumCode').textContent=state.codeboxes.length;
+  document.getElementById('sumTpl').textContent=state.templates.length;
+  document.getElementById('sumCoins').textContent=state.coins;
+  document.getElementById('sumKeys').textContent=state.keys;
+  const list=document.getElementById('codeList'); list.innerHTML='';
+  state.creditCodes.forEach(c=>{
+    const row=document.createElement('div');
+    row.innerHTML=`<span>${c.code}</span><span>${c.coins}🪙 / ${c.keys}🔑 · ${new Date(c.ts).toLocaleDateString()}</span>`;
+    list.appendChild(row);
+  });
+}
+document.getElementById('genCodeBtn').onclick=async()=>{
+  const raw = `${state.coins}-${state.keys}-${Date.now()}-${Math.random()}`;
+  const code = 'EGV-'+btoa(raw).replace(/[^A-Za-z0-9]/g,'').slice(0,14).toUpperCase();
+  state.creditCodes.push({code, coins:state.coins, keys:state.keys, ts:Date.now()});
+  await saveVault(); renderFiles();
+};
+
+document.getElementById('exportEncryptedBtn').onclick=()=>{
+  const blob=localStorage.getItem(VAULT_KEY);
+  downloadText(blob, 'enterprise_gamer_vault.vault');
+};
+document.getElementById('exportPlainBtn').onclick=()=>{
+  downloadText(JSON.stringify(state,null,2), 'egv_backup_unencrypted.json');
+};
+document.getElementById('importEncryptedBtn').onclick=()=>document.getElementById('importFileInput').click();
+document.getElementById('importFileInput').onchange=(e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=async()=>{
+    try{
+      const blob=JSON.parse(reader.result);
+      if(!blob.salt||!blob.iv||!blob.data) throw new Error('bad file');
+      const pass=prompt('Passphrase for this imported vault file:');
+      if(!pass) return;
+      const key=await deriveKey(pass, blob.salt);
+      const imported=await decryptJSON(key, blob.iv, blob.data);
+      if(!confirm('Replace your current vault with the imported one?')) return;
+      state=imported; sessionKey=key; localStorage.setItem(VAULT_KEY, reader.result);
+      renderAll(); alert('Vault imported.');
+    }catch(err){ alert('Could not import — wrong passphrase or invalid file.'); }
+  };
+  reader.readAsText(f);
+};
+document.getElementById('changePassBtn').onclick=async()=>{
+  const newPass=prompt('New passphrase (min 4 characters):'); if(!newPass||newPass.length<4) return;
+  const salt=ab2b64(crypto.getRandomValues(new Uint8Array(16)).buffer);
+  sessionKey=await deriveKey(newPass, salt);
+  const {iv,data}=await encryptJSON(sessionKey,state);
+  localStorage.setItem(VAULT_KEY, JSON.stringify({salt,iv,data}));
+  alert('Passphrase changed. Remember it — there is no recovery.');
+};
+document.getElementById('wipeVaultBtn').onclick=()=>{
+  if(!confirm('This permanently deletes your vault from this browser. Continue?')) return;
+  if(!confirm('Really sure? This cannot be undone.')) return;
+  localStorage.removeItem(VAULT_KEY);
+  location.reload();
+};
+
+/* ---------- utils ---------- */
+function downloadText(text, filename){
+  const blob=new Blob([text],{type:'text/plain'}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);
+}
+function escapeHTML(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(s){ return escapeHTML(s); }
+</script>
+</body>
+</html>
